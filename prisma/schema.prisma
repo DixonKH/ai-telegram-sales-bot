@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,4 +5,105 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MessageRole {
+  USER
+  BOT
+  SYSTEM
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id        String        @id @default(uuid())
+  email     String        @unique
+  password  String
+  role      Role          @default(USER)
+  bots      TelegramBot[]
+  createdAt DateTime      @default(now())
+}
+
+model TelegramBot {
+  id            String         @id @default(uuid())
+  name          String
+  token         String         @unique
+  owner         User           @relation(fields: [ownerId], references: [id])
+  ownerId       String
+  customers     TelegramUser[]
+  products      Product[]
+  conversations Conversation[]
+  aiSettings    AISettings?
+  createdAt     DateTime       @default(now())
+}
+
+model TelegramUser {
+  id            String         @id @default(uuid())
+  telegramId    String
+  username      String?
+  bot           TelegramBot    @relation(fields: [botId], references: [id])
+  botId         String
+  conversations Conversation[]
+  orders        Order[]
+  createdAt     DateTime       @default(now())
+
+  @@unique([telegramId, botId])
+}
+
+model Conversation {
+  id         String       @id @default(uuid())
+  bot        TelegramBot  @relation(fields: [botId], references: [id])
+  botId      String
+  customer   TelegramUser @relation(fields: [customerId], references: [id])
+  customerId String
+  messages   Message[]
+  createdAt  DateTime     @default(now())
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  role           MessageRole
+  content        String
+  createdAt      DateTime     @default(now())
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  bot         TelegramBot @relation(fields: [botId], references: [id])
+  botId       String
+  orders      Order[]
+  createdAt   DateTime    @default(now())
+}
+
+model Order {
+  id         String       @id @default(uuid())
+  product    Product      @relation(fields: [productId], references: [id])
+  productId  String
+  customer   TelegramUser @relation(fields: [customerId], references: [id])
+  customerId String
+  status     OrderStatus  @default(PENDING)
+  createdAt  DateTime     @default(now())
+}
+
+model AISettings {
+  id           String      @id @default(uuid())
+  bot          TelegramBot @relation(fields: [botId], references: [id])
+  botId        String      @unique
+  systemPrompt String
+  temperature  Float       @default(0.7)
+  createdAt    DateTime    @default(now())
 }
