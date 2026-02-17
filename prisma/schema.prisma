@@ -9,7 +9,7 @@ datasource db {
 
 enum Role {
   USER
-  ADMIN
+  ADMIN 
 }
 
 enum MessageRole {
@@ -28,9 +28,15 @@ model User {
   id        String        @id @default(uuid())
   email     String        @unique
   password  String
+  telegramId        String?   @unique
+  telegramUsername  String?  @unique
+  firstName         String?
+  lastName          String?
   role      Role          @default(USER)
   bots      TelegramBot[]
   createdAt DateTime      @default(now())
+
+  refreshTokenHash String?
 }
 
 model TelegramBot {
